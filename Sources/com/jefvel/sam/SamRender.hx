@@ -131,8 +131,10 @@ class SamRender
 		}
 	}
 	
-	function renderSample(unsigned char *mem66) {     
+	function renderSample(mem66:Array<Int>, pos:Int) {     
 		var tempA:Int;
+		var phase1:Int;
+		
 		// current phoneme's index
 		mem49 = Y;
 
@@ -157,79 +159,81 @@ class SamRender
 		
 		// voiced sample?
 		A = mem39 & 248;
-		if(A == 0)
-		{
+		if(A == 0) {
 			// voiced phoneme: Z*, ZH, V*, DH
 			Y = mem49;
 			A = pitches[mem49] >> 4;
-			
-			// jump to voiced portion
-			goto pos48315;
+		} else {
+		
+			Y = A ^ 255;
+			var skipFirst = false;
+			while(true){
+				if(!skipFirst) {
+					// step through the 8 bits in the sample
+					mem56 = 8;
+					
+					// get the next sample from the table
+					// mem47*256 = offset to start of samples
+					A = RenderTabs.sampleTable[mem47 * 256 + Y];
+					
+				}
+				
+				skipFirst = false;
+
+				// left shift to get the high bit
+				tempA = A;
+				A = A << 1;
+				//48281: BCC 48290
+				
+				// bit not set?
+				if ((tempA & 128) == 0) {
+					// convert the bit to value from table
+					X = mem53;
+					//mem[54296] = X;
+					// output the byte
+					output(1, X);
+				}
+				
+				if (X != 0 && (tempA & 128) == 0) {
+					
+				}else{
+					// output a 5 for the on bit
+					output(2, 5);
+				}
+
+				X = 0;
+
+				// decrement counter
+				mem56--;
+				
+				// if not done, jump to top of loop
+				if (mem56 != 0) {
+					skipFirst = true;
+					continue;
+				}
+				
+				// increment position
+				Y++;
+				if (Y != 0) {
+					skipFirst = false;
+					continue;
+				}
+				
+				// restore values and return
+				mem44 = 1;
+				Y = mem49;
+				
+				return;
+			}
 		}
 		
-		Y = A ^ 255;
-	pos48274:
-			 
-		// step through the 8 bits in the sample
-		mem56 = 8;
-		
-		// get the next sample from the table
-		// mem47*256 = offset to start of samples
-		A = RenderTabs.sampleTable[mem47*256+Y];
-	pos48280:
-
-		// left shift to get the high bit
-		tempA = A;
-		A = A << 1;
-		//48281: BCC 48290
-		
-		// bit not set?
-		if ((tempA & 128) == 0)
-		{
-			// convert the bit to value from table
-			X = mem53;
-			//mem[54296] = X;
-			// output the byte
-			output(1, X);
-			// if X != 0, exit loop
-			if(X != 0) goto pos48296;
-		}
-		
-		// output a 5 for the on bit
-		output(2, 5);
-
-		//48295: NOP
-	pos48296:
-
-		X = 0;
-
-		// decrement counter
-		mem56--;
-		
-		// if not done, jump to top of loop
-		if (mem56 != 0) goto pos48280;
-		
-		// increment position
-		Y++;
-		if (Y != 0) goto pos48274;
-		
-		// restore values and return
-		mem44 = 1;
-		Y = mem49;
-		return;
-
-
-		var phase1:Int;
-
-	pos48315:
-	// handle voiced samples here
-
-	   // number of samples?
+		// handle voiced samples here
+		// number of samples?
 		phase1 = A ^ 255;
 
-		Y = *mem66;
-		do
-		{
+		Y = mem66[pos];
+		
+		do {
 			//pos48321:
 
 			// shift through all 8 bits
@@ -241,28 +245,26 @@ class SamRender
 
 			// loop 8 times
 			//pos48327:
-			do
-			{
+			do {
 				//48327: ASL A
 				//48328: BCC 48337
 				
 				// left shift and check high bit
 				tempA = A;
 				A = A << 1;
-				if ((tempA & 128) != 0)
-				{
+				if ((tempA & 128) != 0) {
 					// if bit set, output 26
 					X = 26;
-					Output(3, X);
-				} else
-				{
+					output(3, X);
+				} else {
 					//timetable 4
 					// bit is not set, output a 6
 					X=6;
-					Output(4, X);
+					output(4, X);
 				}
 
 				mem56--;
+				
 			} while(mem56 != 0);
 
 			// move ahead in the table
@@ -277,8 +279,9 @@ class SamRender
 		// restore values and return
 		A = 1;
 		mem44 = 1;
-		*mem66 = Y;
+		mem66[pos] = Y;
 		Y = mem49;
+		
 		return;
 	}
 
