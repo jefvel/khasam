@@ -63,7 +63,7 @@ class Sam
 		
 		render = new SamRender();
 		
-		var o = SamReciter.textToPhonemes("GI JOE");
+		var o = SamReciter.textToPhonemes("GI JOE[");
 		trace(o);
 	}
 	

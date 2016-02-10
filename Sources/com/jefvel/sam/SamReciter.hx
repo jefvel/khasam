@@ -47,11 +47,11 @@ class SamReciter
 	}
 	
 	static function stringToArray(input:String) {
-		var res = new Vector<Int>(input.length );
+		var res = new Vector<Int>(input.length + 1);
 		for (i in 0...input.length) {
 			res[i] = input.charCodeAt(i);
 		}
-		//res[res.length - 1] = 0;
+		res[res.length - 1] = 0;
 		return res;
 	}
 	
@@ -97,21 +97,22 @@ class SamReciter
 		inputtemp[X] = 27;
 		mem61 = 255;
 		
-		var maxSkip = 500;
+		var maxSkip = 0;
 		var skipFlag = maxSkip;
-		var runs = 50000;
+		var runs = 0;
 
-		while(runs-- > 0) {
-
+		while(true) {
+			runs ++;
+			
 		//pos36550:
-			if (skipFlag > 1) {
+			if (skipFlag <= 2) {
 				skipFlag = maxSkip;
 				A = 255;
 				mem56 = 255;
 			}
 			
 		//pos36554:
-			if (skipFlag > 2) {
+			if (skipFlag <= 3) {
 				skipFlag = maxSkip;
 				while(true) {
 					mem61++;
@@ -132,12 +133,15 @@ class SamReciter
 					if (A != '.'.charCodeAt(0)) {
 						break;
 					}
+					
 					X++;
 					Y = inputtemp[X];
 					A = ReciterTabs.tab36376[Y] & 1;
+					
 					if (A != 0) {
 						break;
 					}
+					
 					mem56++;
 					X = mem56;
 					A = '.'.charCodeAt(0);
@@ -183,14 +187,14 @@ class SamReciter
 
 			//36653 is unknown. Contains position
 			//pos36654:
-			if (skipFlag > 3) {
+			if (skipFlag <= 4) {
 				skipFlag = maxSkip;
 				input[X] = 155;
 				A = mem61;
 				mem36653 = A;
 				//	mem29 = A; // not used
 				//	Code36538(); das ist eigentlich
-				return 1;
+				return runs;
 				//Code39771();
 				//go on if there is more input ???
 				mem61 = mem36653;
@@ -200,13 +204,13 @@ class SamReciter
 			}
 
 		//pos36677:
-			if (skipFlag > 4) {
+			if (skipFlag <= 5) {
 				skipFlag = maxSkip;
 				A = mem57 & 128;
 				if(A == 0)
 				{
 					//36683: BRK
-					return 0;
+					return runs;
 				}
 
 				// go to the right rules for this character.
@@ -219,7 +223,7 @@ class SamReciter
 			// -------------------------------------
 
 		//pos36700:
-			if (skipFlag > 5) {
+			if (skipFlag <= 6) {
 				skipFlag = maxSkip;	
 				// find next rule
 				Y = 0;
@@ -288,7 +292,7 @@ class SamReciter
 			mem59 = mem61;
 
 		//pos36791:
-			if (skipFlag > 6) {
+			if (skipFlag <= 7) {
 				skipFlag = maxSkip;
 				while(true) {
 					mem66--;
@@ -360,12 +364,12 @@ class SamReciter
 				}
 				//	Code42041();    //Error
 				//36894: BRK
-				return 0;
+				return -2;
 			}
 			// --------------
 			
 			//pos36895:
-			if (skipFlag > 7) {
+			if (skipFlag <= 8) {
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 128;
@@ -377,7 +381,7 @@ class SamReciter
 			}
 			
 			//pos36905:
-			if (skipFlag > 8) {
+			if (skipFlag <= 9) {
 				skipFlag = maxSkip;	
 				mem59 = X;
 				//goto pos36791;
@@ -388,7 +392,7 @@ class SamReciter
 			// --------------
 
 		//pos36910:
-			if (skipFlag > 9) {
+			if (skipFlag <= 10) {
 				skipFlag = maxSkip;
 				
 				Code37055(mem59);
@@ -408,7 +412,7 @@ class SamReciter
 
 
 		//pos36920:
-			if (skipFlag > 10) {
+			if (skipFlag <= 11) {
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 8;
@@ -419,7 +423,7 @@ class SamReciter
 				}
 			}
 		//pos36930:
-			if (skipFlag > 11) {
+			if (skipFlag <= 12) {
 				skipFlag = maxSkip;
 				mem59 = X;
 				//goto pos36791;
@@ -430,7 +434,7 @@ class SamReciter
 			// --------------
 
 		//pos36935:
-			if (skipFlag > 12) {
+			if (skipFlag <= 13) {
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 16;
@@ -460,7 +464,7 @@ class SamReciter
 			// --------------
 
 		//pos36967:
-			if (skipFlag > 13) {
+			if (skipFlag <= 14) {
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 4;
@@ -491,7 +495,7 @@ class SamReciter
 
 
 		//pos37004:
-			if (skipFlag > 14) {
+			if (skipFlag <= 15) {
 				skipFlag = maxSkip;	
 				Code37055(mem59);
 				A = A & 32;
@@ -503,7 +507,7 @@ class SamReciter
 			}
 
 		//pos37014:
-			if (skipFlag > 15) {
+			if (skipFlag <= 16) {
 				skipFlag = maxSkip;
 				mem59 = X;
 				
@@ -515,7 +519,7 @@ class SamReciter
 			// --------------
 
 		//pos37019:
-			if (skipFlag > 16) {
+			if (skipFlag <= 18) {
 				skipFlag = maxSkip;	
 				X = mem59;
 				X--;
@@ -532,7 +536,7 @@ class SamReciter
 			// --------------
 
 		//pos37040:
-			if (skipFlag > 17) {
+			if (skipFlag <= 19) {
 				skipFlag = maxSkip;	
 				Code37055(mem59);
 				A = A & 32;
@@ -552,7 +556,7 @@ class SamReciter
 
 
 		//pos37077:
-			if (skipFlag > 18) {
+			if (skipFlag <= 20) {
 				skipFlag = maxSkip;	
 				X = mem58+1;
 				A = inputtemp[X];
@@ -579,7 +583,7 @@ class SamReciter
 				}
 			}
 		//pos37108:
-			if (skipFlag > 19) {
+			if (skipFlag <= 21) {
 				skipFlag = maxSkip;	
 				mem58 = X;
 				//goto pos37184;
@@ -587,7 +591,7 @@ class SamReciter
 				continue;
 			}
 		//pos37113:
-			if (skipFlag > 20) {
+			if (skipFlag <= 22) {
 				skipFlag = maxSkip;	
 				if ((A == 83) || (A == 68)) {
 					//goto pos37108;  // 'S' 'D'
@@ -613,7 +617,7 @@ class SamReciter
 			}
 			
 		//pos37135:
-			if (skipFlag > 21) {
+			if (skipFlag <= 23) {
 				skipFlag = maxSkip;
 				if (A != 70) {
 					//goto pos36700;
@@ -641,7 +645,7 @@ class SamReciter
 			}
 
 		//pos37157:
-			if (skipFlag > 22) {
+			if (skipFlag <= 23) {
 				skipFlag = maxSkip;
 				if (A != 73) {
 					//goto pos36700;
@@ -671,14 +675,14 @@ class SamReciter
 			// -----------------------------------------
 
 		//pos37180:
-			if (skipFlag > 23) {
+			if (skipFlag <= 24) {
 				skipFlag = maxSkip;
 				A = mem60;
 				mem58 = A;
 			}
 
 		//pos37184:
-			if (skipFlag > 24) {
+			if (skipFlag <= 25) {
 				skipFlag = maxSkip;
 				Y = mem65 + 1;
 
@@ -713,7 +717,7 @@ class SamReciter
 				continue;
 			}
 		//pos37226:
-			if (skipFlag > 25) {
+			if (skipFlag <= 26) {
 				skipFlag = maxSkip;
 				A = mem57;
 				if (A == 32) {
@@ -764,12 +768,12 @@ class SamReciter
 				//pos37291:
 				//	Code42041(); //Error
 				//37294: BRK
-				return 0;
+				return -3;
 			}
 
 			// --------------
 		//pos37295:
-			if (skipFlag > 26) {
+			if (skipFlag <= 27) {
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 128;
@@ -780,7 +784,7 @@ class SamReciter
 				}
 			}
 		//pos37305:
-			if (skipFlag > 27) {
+			if (skipFlag <= 28) {
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -791,7 +795,7 @@ class SamReciter
 			// --------------
 
 		//pos37310:
-			if (skipFlag > 28) {
+			if (skipFlag <= 29) {
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 64;
@@ -810,7 +814,7 @@ class SamReciter
 
 
 		//pos37320:
-			if (skipFlag > 29) {
+			if (skipFlag <= 30) {
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 8;
@@ -822,7 +826,7 @@ class SamReciter
 			}
 
 		//pos37330:
-			if(skipFlag > 30) {
+			if(skipFlag <= 31) {
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -833,7 +837,7 @@ class SamReciter
 			// --------------
 
 		//pos37335:
-			if (skipFlag > 31) {
+			if (skipFlag <= 32) {
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 16;
@@ -865,7 +869,7 @@ class SamReciter
 
 
 		//pos37367:
-			if (skipFlag > 32) {
+			if (skipFlag <= 33) {
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 4;
@@ -894,7 +898,7 @@ class SamReciter
 			// --------------
 
 		//pos37404:
-			if (skipFlag > 33) {
+			if (skipFlag <= 34) {
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 32;
@@ -905,7 +909,7 @@ class SamReciter
 				}
 			}
 		//pos37414:
-			if (skipFlag > 34) {
+			if (skipFlag <= 35) {
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -917,7 +921,7 @@ class SamReciter
 			// --------------
 			
 		//pos37419:
-			if (skipFlag > 35) {
+			if (skipFlag <= 36) {
 				skipFlag = maxSkip;	
 				X = mem58;
 				X++;
@@ -936,7 +940,7 @@ class SamReciter
 		// ----------------------
 
 		//pos37440:
-			if (skipFlag > 36) {
+			if (skipFlag <= 37) {
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 32;
@@ -951,7 +955,7 @@ class SamReciter
 				continue;
 			}
 		//pos37455:
-			if (skipFlag > 37) {
+			if (skipFlag <= 38) {
 				skipFlag = maxSkip;	
 				Y = mem64;
 				mem61 = mem60;
@@ -960,7 +964,7 @@ class SamReciter
 				//	PrintRule(mem62);
 			}
 		//pos37461:
-			if (skipFlag > 38) {
+			if (skipFlag <= 39) {
 				skipFlag = maxSkip;	
 				//37461: LDA (62),y
 				A = GetRuleByte(mem62, Y);
@@ -986,7 +990,7 @@ class SamReciter
 				continue;
 			}
 		//pos37485:
-			if (skipFlag > 39) {
+			if (skipFlag <= 40) {
 				skipFlag = maxSkip;	
 				Y++;
 				//goto pos37461;
@@ -995,11 +999,6 @@ class SamReciter
 			}
 			break;
 		}
-		var res = "";
-		for (i in 0...inputtemp.length) {
-			res += inputtemp[i] + ", ";
-		}
-		trace(res);
-		return 0;
+		return -4;
 	}
 }
