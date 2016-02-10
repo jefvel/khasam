@@ -1034,7 +1034,7 @@ class SamRender
 		var length = 44100*10;
 		var data:Vector<Float> = new Vector<Float>(length);
 		for (i in 0...length) {
-			data[i] =  Math.sin((i / 32.0) * Math.PI) * 0.5 + 0.5;
+			data[i] =  Math.sin((i / (Math.cos(i * 0.1) * 20 +  128.0)) * Math.PI) * 0.5 + 0.5;
 		}
 		
 		return new SamSound(data);

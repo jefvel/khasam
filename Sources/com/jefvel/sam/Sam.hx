@@ -63,8 +63,14 @@ class Sam
 		
 		render = new SamRender();
 		
-		var o = SamReciter.textToPhonemes("GI JOE[");
-		trace(o);
+		var o = SamReciter.textToPhonemes("what is good[");
+		var res = "";
+		for (i in SamReciter.result) {
+			res += String.fromCharCode(i);
+		}
+		
+		trace(res);
+		//trace(o);
 	}
 	
 	function init() {
@@ -99,7 +105,7 @@ class Sam
 		var length = 44100*10;
 		var data:Vector<Float> = new Vector<Float>(length);
 		for (i in 0...length) {
-			data[i] =  Math.sin((i / 32.0) * Math.PI) * 0.5 + 0.5;
+			//data[i] =  (Math.sin((i / (300.0 + Math.sin(i * 0.001) * 99))) * 0.5 + 0.5) / Math.pow(i * 0.0001, 3) ;
 		}
 		
 		return new SamSound(data);

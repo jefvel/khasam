@@ -17,6 +17,8 @@ class SamReciter
 
 	static var inputtemp:Vector<Int> = new Vector<Int>(256);   // secure copy of input tab36096
 
+	public static var result:Vector<Int>;
+	
 	static function Code37055(mem59:Int):Void {
 		X = mem59;
 		X--;
@@ -29,6 +31,7 @@ class SamReciter
 	static function Code37066(mem58:Int):Void {
 		X = mem58;
 		X++;
+		X = X % 256;
 		A = inputtemp[X];
 		Y = A;
 		A = ReciterTabs.tab36376[Y];
@@ -36,7 +39,6 @@ class SamReciter
 	
 	static function GetRuleByte(mem62:Int, Y:Int):Int {
 		var address:Int = mem62;
-		
 		if (mem62 >= 37541) {
 			address -= 37541;
 			return ReciterTabs.rules2[address+Y];
@@ -49,9 +51,12 @@ class SamReciter
 	static function stringToArray(input:String) {
 		var res = new Vector<Int>(input.length + 1);
 		for (i in 0...input.length) {
+			input = input.toUpperCase();
 			res[i] = input.charCodeAt(i);
 		}
 		res[res.length - 1] = 0;
+		result = res;
+		trace("Input string: " + res);
 		return res;
 	}
 	
@@ -106,6 +111,7 @@ class SamReciter
 			
 		//pos36550:
 			if (skipFlag <= 2) {
+				trace("pos36550");
 				skipFlag = maxSkip;
 				A = 255;
 				mem56 = 255;
@@ -113,14 +119,17 @@ class SamReciter
 			
 		//pos36554:
 			if (skipFlag <= 3) {
+				trace("pos36554");
 				skipFlag = maxSkip;
 				while(true) {
 					mem61++;
+					mem61 = mem61 % 256;
 					X = mem61;
 					A = inputtemp[X];
 					mem64 = A;
 					if (A == '['.charCodeAt(0)) {
 						mem56++;
+						mem56 = mem56 % 256;
 						X = mem56;
 						A = 155;
 						input[X] = 155;
@@ -135,6 +144,7 @@ class SamReciter
 					}
 					
 					X++;
+					X = X % 256;
 					Y = inputtemp[X];
 					A = ReciterTabs.tab36376[Y] & 1;
 					
@@ -143,6 +153,7 @@ class SamReciter
 					}
 					
 					mem56++;
+					mem56 = mem56 % 256;
 					X = mem56;
 					A = '.'.charCodeAt(0);
 					input[X] = '.'.charCodeAt(0);
@@ -172,6 +183,7 @@ class SamReciter
 				A = 32;
 				inputtemp[X] = ' '.charCodeAt(0);
 				mem56++;
+				mem56 = mem56 % 256;
 				X = mem56;
 				if (X > 120) {
 					//goto pos36654;
@@ -188,6 +200,7 @@ class SamReciter
 			//36653 is unknown. Contains position
 			//pos36654:
 			if (skipFlag <= 4) {
+				trace("pos36654");
 				skipFlag = maxSkip;
 				input[X] = 155;
 				A = mem61;
@@ -205,17 +218,19 @@ class SamReciter
 
 		//pos36677:
 			if (skipFlag <= 5) {
+				trace("pos36677");
 				skipFlag = maxSkip;
 				A = mem57 & 128;
-				if(A == 0)
-				{
+				A = A % 256;
+				if(A == 0) {
 					//36683: BRK
 					return runs;
 				}
 
 				// go to the right rules for this character.
 				X = mem64 - 'A'.charCodeAt(0);
-				mem62 = ReciterTabs.tab37489[X] | (ReciterTabs.tab37515[X]<<8);
+				mem62 = ReciterTabs.tab37489[X] | (ReciterTabs.tab37515[X] << 8);
+				mem62 = mem62 % 65536;
 			}
 			
 			// -------------------------------------
@@ -224,16 +239,19 @@ class SamReciter
 
 		//pos36700:
 			if (skipFlag <= 6) {
+				trace("pos36700");
+
 				skipFlag = maxSkip;	
 				// find next rule
 				Y = 0;
-				do
-				{
+				do {
 					mem62 += 1;
+					mem62 = mem62 % 65536;
 					A = GetRuleByte(mem62, Y);
 				} while ((A & 128) == 0);
 				
 				Y++;
+				Y = Y % 256;
 
 				//pos36720:
 				// find '('
@@ -241,14 +259,15 @@ class SamReciter
 					A = GetRuleByte(mem62, Y);
 					if (A == '('.charCodeAt(0)) break;
 					Y++;
+					Y = Y % 256;
 				}
 				mem66 = Y;
 
 				//pos36732:
 				// find ')'
-				do
-				{
+				do {
 					Y++;
+					Y = Y % 256;
 					A = GetRuleByte(mem62, Y);
 				} while(A != ')'.charCodeAt(0));
 				mem65 = Y;
@@ -257,17 +276,20 @@ class SamReciter
 				// find '='
 				do {
 					Y++;
+					Y = Y % 256;
 					A = GetRuleByte(mem62, Y);
 					A = A & 127;
 				} while (A != '='.charCodeAt(0));
 				mem64 = Y;
-
+				
 				X = mem61;
 				mem60 = X;
 
 				// compare the string within the bracket
 				Y = mem66;
 				Y++;
+				Y = Y % 256;
+				var superBreak = false;
 				//pos36759:
 				while(true) {
 					mem57 = inputtemp[X];
@@ -275,27 +297,39 @@ class SamReciter
 					if (A != mem57) {
 						//goto pos36700;
 						skipFlag = 6;
-						continue;
+						superBreak = true;
+						break;
 					}
 					Y++;
+					Y = Y % 256;
 					if (Y == mem65) {
 						break;
 					}
 					X++;
+					X = X % 256;
 					mem60 = X;
 				}
-			}
+				if (superBreak) {
+					continue;	
+				}
+			
 		// the string in the bracket is correct
 
 		//pos36787:
 			A = mem61;
 			mem59 = mem61;
-
+		}
 		//pos36791:
 			if (skipFlag <= 7) {
+				trace("pos36791");
 				skipFlag = maxSkip;
-				while(true) {
+				var superBreak = false;
+				while (true) {
 					mem66--;
+					if (mem66 < 0) {
+						mem66 = 255;
+					}
+					
 					Y = mem66;
 					A = GetRuleByte(mem62, Y);
 					mem57 = A;
@@ -303,22 +337,35 @@ class SamReciter
 					if ((A & 128) != 0) {
 						//goto pos37180;
 						skipFlag = 24;
-						continue;
+						superBreak = true;
+						break;
 					}
 					X = A & 127;
 					A = ReciterTabs.tab36376[X] & 128;
 					if (A == 0) {
 						break;
 					}
-					X = mem59-1;
+					
+					X = mem59 - 1;
+					if (X < 0) {
+						X = 255;
+					}
+					
 					A = inputtemp[X];
 					if (A != mem57) {
 						//goto pos36700;
 						skipFlag = 6;
-						continue;
+						superBreak = true;
+						break;
 					}
+					
 					mem59 = X;
 				}
+				
+				if (superBreak) {
+					continue;
+				}
+				
 
 			//pos36833:
 				A = mem57;
@@ -370,6 +417,7 @@ class SamReciter
 			
 			//pos36895:
 			if (skipFlag <= 8) {
+				trace("pos36895");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 128;
@@ -382,6 +430,7 @@ class SamReciter
 			
 			//pos36905:
 			if (skipFlag <= 9) {
+				trace("pos36905");
 				skipFlag = maxSkip;	
 				mem59 = X;
 				//goto pos36791;
@@ -393,6 +442,7 @@ class SamReciter
 
 		//pos36910:
 			if (skipFlag <= 10) {
+				trace("pos36910");
 				skipFlag = maxSkip;
 				
 				Code37055(mem59);
@@ -413,6 +463,7 @@ class SamReciter
 
 		//pos36920:
 			if (skipFlag <= 11) {
+				trace("pos36920");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 8;
@@ -424,6 +475,7 @@ class SamReciter
 			}
 		//pos36930:
 			if (skipFlag <= 12) {
+				trace("pos36930");
 				skipFlag = maxSkip;
 				mem59 = X;
 				//goto pos36791;
@@ -435,6 +487,7 @@ class SamReciter
 
 		//pos36935:
 			if (skipFlag <= 13) {
+				trace("pos36935");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 16;
@@ -449,7 +502,12 @@ class SamReciter
 					skipFlag = 6;
 					continue;
 				}
+				
 				X--;
+				if (X < 0) {
+					X = 255;
+				}
+				
 				A = inputtemp[X];
 				if ((A == 67) || (A == 83)) {
 					//goto pos36930;
@@ -465,6 +523,7 @@ class SamReciter
 
 		//pos36967:
 			if (skipFlag <= 14) {
+				trace("pos36967");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 4;
@@ -496,6 +555,7 @@ class SamReciter
 
 		//pos37004:
 			if (skipFlag <= 15) {
+				trace("pos37004");
 				skipFlag = maxSkip;	
 				Code37055(mem59);
 				A = A & 32;
@@ -523,6 +583,9 @@ class SamReciter
 				skipFlag = maxSkip;	
 				X = mem59;
 				X--;
+				if (X < 0) {
+					X = 255;
+				}
 				A = inputtemp[X];
 				if ((A == 'E'.charCodeAt(0)) || (A == 'I'.charCodeAt(0)) || (A == 'Y'.charCodeAt(0))) {
 					//goto pos37014;
@@ -558,7 +621,9 @@ class SamReciter
 		//pos37077:
 			if (skipFlag <= 20) {
 				skipFlag = maxSkip;	
-				X = mem58+1;
+				X = mem58 + 1;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A != 'E'.charCodeAt(0)) {
 					//goto pos37157;
@@ -566,8 +631,12 @@ class SamReciter
 					continue;
 				}
 				X++;
+				X = X % 256;
 				Y = inputtemp[X];
 				X--;
+				if (X < 0) {
+					X = 255;
+				}
 				A = ReciterTabs.tab36376[Y] & 128;
 				if (A == 0) {
 					//goto pos37108;
@@ -575,6 +644,7 @@ class SamReciter
 					continue;
 				}
 				X++;
+				X = X % 256;
 				A = inputtemp[X];
 				if (A != 'R'.charCodeAt(0)) {
 					//goto pos37113;
@@ -604,6 +674,8 @@ class SamReciter
 					continue;
 				}
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A != 89) {
 					//goto pos36700;
@@ -625,13 +697,18 @@ class SamReciter
 					continue;
 				}
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A != 85) {
 					//goto pos36700;
 					skipFlag = 6;
 					continue;
 				}
+				
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A == 76) {
 					//goto pos37108;
@@ -652,14 +729,20 @@ class SamReciter
 					skipFlag = 6;
 					continue;
 				}
+				
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A != 78) {
 					//goto pos36700;
 					skipFlag = 6;
 					continue;
 				}
+				
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A == 71) {
 					//goto pos37108;
@@ -685,6 +768,7 @@ class SamReciter
 			if (skipFlag <= 25) {
 				skipFlag = maxSkip;
 				Y = mem65 + 1;
+				Y = Y % 256;
 
 				//37187: CPY 64
 				//	if(? != 0) goto pos37194;
@@ -704,13 +788,16 @@ class SamReciter
 					skipFlag = 26;
 					continue;
 				}
-				X = mem58+1;
+				X = mem58 + 1;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if (A != mem57) {
 					//goto pos36700;
 					skipFlag = 6;
 					continue;
 				}
+				
 				mem58 = X;
 				//goto pos37184;
 				skipFlag = 25;
@@ -852,7 +939,10 @@ class SamReciter
 					skipFlag = 6;
 					continue;
 				}
+				
 				X++;
+				X = X % 256;
+				
 				A = inputtemp[X];
 				if ((A == 67) || (A == 83)) {
 					//goto pos37330;
@@ -925,6 +1015,7 @@ class SamReciter
 				skipFlag = maxSkip;	
 				X = mem58;
 				X++;
+				X = X % 256;
 				A = inputtemp[X];
 				if ((A == 69) || (A == 73) || (A == 89)) {
 					//goto pos37414;
@@ -970,9 +1061,9 @@ class SamReciter
 				A = GetRuleByte(mem62, Y);
 				mem57 = A;
 				A = A & 127;
-				if (A != '='.charCodeAt(0))
-				{
+				if (A != '='.charCodeAt(0)) {
 					mem56++;
+					mem56 = mem56 % 256;
 					X = mem56;
 					input[X] = A;
 				}
@@ -993,6 +1084,7 @@ class SamReciter
 			if (skipFlag <= 40) {
 				skipFlag = maxSkip;	
 				Y++;
+				Y = Y % 256;
 				//goto pos37461;
 				skipFlag = 39;
 				continue;
