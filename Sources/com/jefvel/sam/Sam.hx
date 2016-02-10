@@ -46,6 +46,7 @@ class Sam
 	var i:RenderTabs;
 	
 	var render:SamRender;
+	var reciter:SamReciter;
 	
 	public static var bufferPos = 0;
 	public static var buffer:Vector<Int> = new Vector<Int>(44100 * 10);
@@ -61,6 +62,9 @@ class Sam
 		phonemeLengthOutput = new Vector<Int>(60);
 		
 		render = new SamRender();
+		
+		var o = SamReciter.textToPhonemes("GI JOE");
+		trace(o);
 	}
 	
 	function init() {
