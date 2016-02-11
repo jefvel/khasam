@@ -49,17 +49,19 @@ class SamReciter
 	}
 	
 	static function stringToArray(input:String) {
+		input += "[";
 		var res = new Vector<Int>(input.length + 1);
 		for (i in 0...input.length) {
 			input = input.toUpperCase();
 			res[i] = input.charCodeAt(i);
 		}
+		
 		res[res.length - 1] = 0;
 		result = res;
-		trace("Input string: " + res);
+		
 		return res;
 	}
-	
+	public static var runs = 0;
 	public static function textToPhonemes(str:String) {
 		var input = stringToArray(str);
 		trace(input);
@@ -104,7 +106,7 @@ class SamReciter
 		
 		var maxSkip = 0;
 		var skipFlag = maxSkip;
-		var runs = 0;
+	
 
 		while(true) {
 			runs ++;
