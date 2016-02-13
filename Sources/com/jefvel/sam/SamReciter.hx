@@ -50,7 +50,10 @@ class SamReciter
 	
 	static function stringToArray(input:String) {
 		input += "[";
-		var res = new Vector<Int>(input.length + 1);
+		var res = new Vector<Int>(256);
+		for (i in 0...256) {
+			res[i] = 0;
+		}
 		for (i in 0...input.length) {
 			input = input.toUpperCase();
 			res[i] = input.charCodeAt(i);
@@ -64,7 +67,7 @@ class SamReciter
 	public static var runs = 0;
 	public static function textToPhonemes(str:String) {
 		var input = stringToArray(str);
-		trace(input);
+		//trace(input);
 		
 		var mem56:Int = 0;      //output position for phonemes
 		var mem57:Int = 0;
@@ -113,7 +116,7 @@ class SamReciter
 			
 		//pos36550:
 			if (skipFlag <= 2) {
-				trace("pos36550");
+				//trace("pos36550");
 				skipFlag = maxSkip;
 				A = 255;
 				mem56 = 255;
@@ -121,7 +124,7 @@ class SamReciter
 			
 		//pos36554:
 			if (skipFlag <= 3) {
-				trace("pos36554");
+				//trace("pos36554");
 				skipFlag = maxSkip;
 				while(true) {
 					mem61++;
@@ -202,7 +205,7 @@ class SamReciter
 			//36653 is unknown. Contains position
 			//pos36654:
 			if (skipFlag <= 4) {
-				trace("pos36654");
+				//trace("pos36654");
 				skipFlag = maxSkip;
 				input[X] = 155;
 				A = mem61;
@@ -220,7 +223,7 @@ class SamReciter
 
 		//pos36677:
 			if (skipFlag <= 5) {
-				trace("pos36677");
+				//trace("pos36677");
 				skipFlag = maxSkip;
 				A = mem57 & 128;
 				A = A % 256;
@@ -241,7 +244,7 @@ class SamReciter
 
 		//pos36700:
 			if (skipFlag <= 6) {
-				trace("pos36700");
+				//trace("pos36700");
 
 				skipFlag = maxSkip;	
 				// find next rule
@@ -323,13 +326,13 @@ class SamReciter
 		}
 		//pos36791:
 			if (skipFlag <= 7) {
-				trace("pos36791");
+				//trace("pos36791");
 				skipFlag = maxSkip;
 				var superBreak = false;
 				while (true) {
 					mem66--;
 					if (mem66 < 0) {
-						mem66 = 255;
+						mem66 += 256;
 					}
 					
 					Y = mem66;
@@ -403,12 +406,12 @@ class SamReciter
 				}
 				if (A == '+'.charCodeAt(0)) {
 					//goto pos37019;
-					skipFlag = 17;
+					skipFlag = 18;
 					continue;
 				}
 				if (A == ':'.charCodeAt(0)) {
 					//goto pos37040;
-					skipFlag = 18;
+					skipFlag = 19;
 					continue;
 				}
 				//	Code42041();    //Error
@@ -419,7 +422,7 @@ class SamReciter
 			
 			//pos36895:
 			if (skipFlag <= 8) {
-				trace("pos36895");
+				//trace("pos36895");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 128;
@@ -432,7 +435,7 @@ class SamReciter
 			
 			//pos36905:
 			if (skipFlag <= 9) {
-				trace("pos36905");
+				//trace("pos36905");
 				skipFlag = maxSkip;	
 				mem59 = X;
 				//goto pos36791;
@@ -444,7 +447,7 @@ class SamReciter
 
 		//pos36910:
 			if (skipFlag <= 10) {
-				trace("pos36910");
+				//trace("pos36910");
 				skipFlag = maxSkip;
 				
 				Code37055(mem59);
@@ -465,7 +468,7 @@ class SamReciter
 
 		//pos36920:
 			if (skipFlag <= 11) {
-				trace("pos36920");
+				//trace("pos36920");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 8;
@@ -477,7 +480,7 @@ class SamReciter
 			}
 		//pos36930:
 			if (skipFlag <= 12) {
-				trace("pos36930");
+				//trace("pos36930");
 				skipFlag = maxSkip;
 				mem59 = X;
 				//goto pos36791;
@@ -489,7 +492,7 @@ class SamReciter
 
 		//pos36935:
 			if (skipFlag <= 13) {
-				trace("pos36935");
+				//trace("pos36935");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 16;
@@ -525,7 +528,7 @@ class SamReciter
 
 		//pos36967:
 			if (skipFlag <= 14) {
-				trace("pos36967");
+				//trace("pos36967");
 				skipFlag = maxSkip;
 				Code37055(mem59);
 				A = A & 4;
@@ -557,7 +560,7 @@ class SamReciter
 
 		//pos37004:
 			if (skipFlag <= 15) {
-				trace("pos37004");
+				//trace("pos37004");
 				skipFlag = maxSkip;	
 				Code37055(mem59);
 				A = A & 32;
@@ -570,6 +573,7 @@ class SamReciter
 
 		//pos37014:
 			if (skipFlag <= 16) {
+				//trace("pos37014");
 				skipFlag = maxSkip;
 				mem59 = X;
 				
@@ -582,6 +586,7 @@ class SamReciter
 
 		//pos37019:
 			if (skipFlag <= 18) {
+				//trace("pos37019");
 				skipFlag = maxSkip;	
 				X = mem59;
 				X--;
@@ -602,6 +607,7 @@ class SamReciter
 
 		//pos37040:
 			if (skipFlag <= 19) {
+				//trace("pos37040");
 				skipFlag = maxSkip;	
 				Code37055(mem59);
 				A = A & 32;
@@ -622,6 +628,7 @@ class SamReciter
 
 		//pos37077:
 			if (skipFlag <= 20) {
+				//trace("pos37077");
 				skipFlag = maxSkip;	
 				X = mem58 + 1;
 				X = X % 256;
@@ -656,6 +663,7 @@ class SamReciter
 			}
 		//pos37108:
 			if (skipFlag <= 21) {
+				//trace("pos37108");
 				skipFlag = maxSkip;	
 				mem58 = X;
 				//goto pos37184;
@@ -664,6 +672,7 @@ class SamReciter
 			}
 		//pos37113:
 			if (skipFlag <= 22) {
+				//trace("pos37113");
 				skipFlag = maxSkip;	
 				if ((A == 83) || (A == 68)) {
 					//goto pos37108;  // 'S' 'D'
@@ -692,6 +701,7 @@ class SamReciter
 			
 		//pos37135:
 			if (skipFlag <= 23) {
+				//trace("pos37135");
 				skipFlag = maxSkip;
 				if (A != 70) {
 					//goto pos36700;
@@ -725,6 +735,7 @@ class SamReciter
 
 		//pos37157:
 			if (skipFlag <= 23) {
+				//trace("pos37157");
 				skipFlag = maxSkip;
 				if (A != 73) {
 					//goto pos36700;
@@ -761,6 +772,7 @@ class SamReciter
 
 		//pos37180:
 			if (skipFlag <= 24) {
+				//trace("pos37180");
 				skipFlag = maxSkip;
 				A = mem60;
 				mem58 = A;
@@ -768,6 +780,7 @@ class SamReciter
 
 		//pos37184:
 			if (skipFlag <= 25) {
+				//trace("pos37184");
 				skipFlag = maxSkip;
 				Y = mem65 + 1;
 				Y = Y % 256;
@@ -807,6 +820,7 @@ class SamReciter
 			}
 		//pos37226:
 			if (skipFlag <= 26) {
+				//trace("pos37226");
 				skipFlag = maxSkip;
 				A = mem57;
 				if (A == 32) {
@@ -851,7 +865,7 @@ class SamReciter
 				}
 				if (A == 37) {
 					//goto pos37077;   // '%'
-					skipFlag = 19;
+					skipFlag = 20;
 					continue;
 				}
 				//pos37291:
@@ -863,6 +877,7 @@ class SamReciter
 			// --------------
 		//pos37295:
 			if (skipFlag <= 27) {
+				//trace("pos37295");
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 128;
@@ -874,6 +889,7 @@ class SamReciter
 			}
 		//pos37305:
 			if (skipFlag <= 28) {
+				//trace("pos37305");
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -885,6 +901,7 @@ class SamReciter
 
 		//pos37310:
 			if (skipFlag <= 29) {
+				//trace("pos37310");
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 64;
@@ -904,6 +921,7 @@ class SamReciter
 
 		//pos37320:
 			if (skipFlag <= 30) {
+				//trace("pos37320");
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 8;
@@ -915,7 +933,8 @@ class SamReciter
 			}
 
 		//pos37330:
-			if(skipFlag <= 31) {
+			if (skipFlag <= 31) {
+				//trace("pos37330");
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -927,6 +946,7 @@ class SamReciter
 
 		//pos37335:
 			if (skipFlag <= 32) {
+				//trace("pos37335");
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 16;
@@ -962,6 +982,7 @@ class SamReciter
 
 		//pos37367:
 			if (skipFlag <= 33) {
+				//trace("pos37367");
 				skipFlag = maxSkip;
 				Code37066(mem58);
 				A = A & 4;
@@ -991,6 +1012,7 @@ class SamReciter
 
 		//pos37404:
 			if (skipFlag <= 34) {
+				//trace("pos37404");
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 32;
@@ -1002,6 +1024,7 @@ class SamReciter
 			}
 		//pos37414:
 			if (skipFlag <= 35) {
+				//trace("pos37414");
 				skipFlag = maxSkip;
 				mem58 = X;
 				//goto pos37184;
@@ -1014,6 +1037,7 @@ class SamReciter
 			
 		//pos37419:
 			if (skipFlag <= 36) {
+				//trace("pos37419");
 				skipFlag = maxSkip;	
 				X = mem58;
 				X++;
@@ -1034,6 +1058,7 @@ class SamReciter
 
 		//pos37440:
 			if (skipFlag <= 37) {
+				//trace("pos37440");
 				skipFlag = maxSkip;	
 				Code37066(mem58);
 				A = A & 32;
@@ -1049,6 +1074,7 @@ class SamReciter
 			}
 		//pos37455:
 			if (skipFlag <= 38) {
+				//trace("pos37455");
 				skipFlag = maxSkip;	
 				Y = mem64;
 				mem61 = mem60;
@@ -1058,6 +1084,7 @@ class SamReciter
 			}
 		//pos37461:
 			if (skipFlag <= 39) {
+				//trace("pos37461");
 				skipFlag = maxSkip;	
 				//37461: LDA (62),y
 				A = GetRuleByte(mem62, Y);
@@ -1084,6 +1111,7 @@ class SamReciter
 			}
 		//pos37485:
 			if (skipFlag <= 40) {
+				//trace("pos37485");
 				skipFlag = maxSkip;	
 				Y++;
 				Y = Y % 256;

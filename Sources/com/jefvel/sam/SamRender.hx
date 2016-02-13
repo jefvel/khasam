@@ -13,33 +13,15 @@ class SamRender
 {
 
 	var input:String;
-	var speed:Int;
-	var pitch:Int;
 	var mouth:Int = 128;
 	var throat:Int = 128;
-	var singMode:Bool = false;
 	
 	var wait1:Int = 7;
 	var wait2:Int = 6;
 	
-	var mem39:Int;
-	var mem44:Int;
-	var mem47:Int;
-	var mem49:Int;
-	var mem50:Int;
-	var mem51:Int;
-	var mem53:Int;
-	var mem56:Int;
-	
-	var mem59:Int = 0;
-	
 	var A:Int;
 	var X:Int;
 	var Y:Int;
-	
-	var stress:Vector<Int>;
-	var phonemeLength:Vector<Int>;
-	var phonemeIndex:Vector<Int>;
 	
 	var pitches:Vector<Int>;
 	
@@ -53,16 +35,9 @@ class SamRender
 	
 	var sampledConsonantFlag:Vector<Int>;
 
-	var phonemeIndexOutput:Vector<Int>;
-	var stressOutput:Vector<Int>;
-	var phonemeLengthOutput:Vector<Int>;
+	var d:SamData;
 	
-	var o:SamTabs;
-	var p:ReciterTabs;
-	var i:RenderTabs;
-	
-	public static var timetable =
-	[
+	public static var timetable = [
 		[162, 167, 167, 127, 128],
 		[226, 60, 60, 0, 0],
 		[225, 60, 59, 0, 0],
@@ -70,9 +45,8 @@ class SamRender
 		[199, 0, 0, 54, 54]
 	];
 
-	
-	public function new() 
-	{
+
+	public function new() {
 		pitches = new Vector<Int>(256);
 		
 		frequency1 = new Vector<Int>(256);
@@ -84,14 +58,6 @@ class SamRender
 		amplitude3 = new Vector<Int>(256);
 		
 		sampledConsonantFlag = new Vector<Int>(256);
-		
-		stress = new Vector<Int>(256);
-		phonemeLength = new Vector<Int>(256);
-		phonemeIndex = new Vector<Int>(256);
-		
-		phonemeIndexOutput = new Vector<Int>(60);
-		stressOutput = new Vector<Int>(60);
-		phonemeLengthOutput = new Vector<Int>(60);
 	}
 	
 	static var oldtimetableindex = 0;
@@ -130,21 +96,77 @@ class SamRender
 			case 174: amplitude3[Y] = value;  return;
 		}
 	}
+		
+	public function PrepareOutput(d:SamData):Void {
+		this.d = d;
+		
+		A = 0;
+		X = 0;
+		Y = 0;
+		
+		trace(d);
+		
+		var runs = 0;
+		
+		//pos48551:
+		while (runs < 10000) {
+			runs++;
+			A = d.phonemeIndex[X];
+			if (A == 255) {
+				A = 255;
+				d.phonemeIndexOutput[Y] = 255;
+				Render();
+				return;
+			}
+			
+			if (A == 254) {
+				X++;
+				X = X % 256;
+				var temp = X;
+				//mem[48546] = X;
+				d.phonemeIndexOutput[Y] = 255;
+				//Render();
+				//X = mem[48546];
+				X = temp;
+				Y = 0;
+				continue;
+			}
+
+			if (A == 0) {
+				X++;
+				X = X % 256;
+				continue;
+			}
+
+			d.phonemeIndexOutput[Y] = A;
+			d.phonemeLengthOutput[Y] = d.phonemeLength[X];
+			d.stressOutput[Y] = d.stress[X];
+			X++;
+			X = X % 256;
+			Y++;
+			Y = Y % 256;
+		}
+		trace(runs + ", " + A);
+		trace("X:" + X);
+	}
 	
 	function renderSample(mem66:Int):Int {     
 		var tempA:Int;
 		var phase1:Int;
 		
 		// current phoneme's index
-		mem49 = Y;
+		d.mem49 = Y;
 
 		// mask low three bits and subtract 1 get value to 
 		// convert 0 bits on unvoiced samples.
-		A = mem39&7;
-		X = A-1;
+		A = d.mem39&7;
+		X = A - 1;
+		if (X < 0) {
+			X += 256;
+		}
 
 		// store the result
-		mem56 = X;
+		d.mem56 = X;
 		
 		// determine which offset to use from table { 0x18, 0x1A, 0x17, 0x17, 0x17 }
 		// T, S, Z                0          0x18
@@ -154,15 +176,15 @@ class SamRender
 		// /X                     4          0x17
 
 		// get value from the table
-		mem53 = RenderTabs.tab48426[X];
-		mem47 = X;      //46016+mem[56]*256
+		d.mem53 = RenderTabs.tab48426[X];
+		d.mem47 = X;      //46016+mem[56]*256
 		
 		// voiced sample?
-		A = mem39 & 248;
+		A = d.mem39 & 248;
 		if(A == 0) {
 			// voiced phoneme: Z*, ZH, V*, DH
-			Y = mem49;
-			A = pitches[mem49] >> 4;
+			Y = d.mem49;
+			A = pitches[d.mem49] >> 4;
 		} else {
 		
 			Y = A ^ 255;
@@ -170,11 +192,11 @@ class SamRender
 			while(true){
 				if(!skipFirst) {
 					// step through the 8 bits in the sample
-					mem56 = 8;
+					d.mem56 = 8;
 					
 					// get the next sample from the table
-					// mem47*256 = offset to start of samples
-					A = RenderTabs.sampleTable[mem47 * 256 + Y];
+					// d.mem47*256 = offset to start of samples
+					A = RenderTabs.sampleTable[d.mem47 * 256 + Y];
 					
 				}
 				
@@ -183,12 +205,14 @@ class SamRender
 				// left shift to get the high bit
 				tempA = A;
 				A = A << 1;
+				A = A % 256;
+				
 				//48281: BCC 48290
 				
 				// bit not set?
 				if ((tempA & 128) == 0) {
 					// convert the bit to value from table
-					X = mem53;
+					X = d.mem53;
 					//mem[54296] = X;
 					// output the byte
 					output(1, X);
@@ -204,24 +228,28 @@ class SamRender
 				X = 0;
 
 				// decrement counter
-				mem56--;
+				d.mem56--;
+				if (d.mem56 < 0) {
+					d.mem56 += 256;
+				}
 				
 				// if not done, jump to top of loop
-				if (mem56 != 0) {
+				if (d.mem56 != 0) {
 					skipFirst = true;
 					continue;
 				}
 				
 				// increment position
 				Y++;
+				Y = Y % 256;
 				if (Y != 0) {
 					skipFirst = false;
 					continue;
 				}
 				
 				// restore values and return
-				mem44 = 1;
-				Y = mem49;
+				d.mem44 = 1;
+				Y = d.mem49;
 				
 				return mem66;
 			}
@@ -237,11 +265,11 @@ class SamRender
 			//pos48321:
 
 			// shift through all 8 bits
-			mem56 = 8;
-			//A = Read(mem47, Y);
+			d.mem56 = 8;
+			//A = Read(d.mem47, Y);
 			
 			// fetch value from table
-			A = RenderTabs.sampleTable[mem47*256+Y];
+			A = RenderTabs.sampleTable[d.mem47*256+Y];
 
 			// loop 8 times
 			//pos48327:
@@ -252,6 +280,7 @@ class SamRender
 				// left shift and check high bit
 				tempA = A;
 				A = A << 1;
+				A = A % 256;
 				if ((tempA & 128) != 0) {
 					// if bit set, output 26
 					X = 26;
@@ -263,24 +292,29 @@ class SamRender
 					output(4, X);
 				}
 
-				mem56--;
+				d.mem56--;
+				if (d.mem56 < 0) {
+				d.mem56 += 256;	
+				}
 				
-			} while(mem56 != 0);
+			} while(d.mem56 != 0);
 
 			// move ahead in the table
 			Y++;
+			Y = Y % 256;
 			
 			// continue until counter done
 			phase1++;
+			phase1 = phase1 % 256;
 
 		} while (phase1 != 0);
 		//	if (phase1 != 0) goto pos48321;
 		
 		// restore values and return
 		A = 1;
-		mem44 = 1;
+		d.mem44 = 1;
 		mem66 = Y;
-		Y = mem49;
+		Y = d.mem49;
 		
 		return mem66;
 	}
@@ -298,13 +332,13 @@ class SamRender
 		var i:Int;
 		var carry:Bool;
 		
-		if (phonemeIndexOutput[0] == 255) {
+		if (d.phonemeIndexOutput[0] == 255) {
 			return; //exit if no data
 		}
 
 		A = 0;
 		X = 0;
-		mem44 = 0;
+		d.mem44 = 0;
 
 
 	// CREATE FRAMES
@@ -319,10 +353,10 @@ class SamRender
 	// pos47587:
 	do {
 		// get the index
-		Y = mem44;
+		Y = d.mem44;
 		// get the phoneme at the index
-		A = phonemeIndexOutput[mem44];
-		mem56 = A;
+		A = d.phonemeIndexOutput[d.mem44];
+		d.mem56 = A;
 		
 		// if terminal phoneme, exit the loop
 		if (A == 255) {
@@ -349,12 +383,12 @@ class SamRender
 		}
 		//	pos47615:
 
-		// get the stress amount (more stress = higher pitch)
-		phase1 = RenderTabs.tab47492[stressOutput[Y] + 1];
+		// get the stress amount (more stress = higher d.pitch)
+		phase1 = RenderTabs.tab47492[d.stressOutput[Y] + 1];
 		
 		// get number of frames to write
-		phase2 = phonemeLengthOutput[Y];
-		Y = mem56;
+		phase2 = d.phonemeLengthOutput[Y];
+		Y = d.mem56;
 		
 		// copy from the source to the frames list
 		do {
@@ -365,12 +399,17 @@ class SamRender
 			amplitude2[X] = RenderTabs.ampl2data[Y];     // F2 amplitude
 			amplitude3[X] = RenderTabs.ampl3data[Y];     // F3 amplitude
 			sampledConsonantFlag[X] = RenderTabs.sampledConsonantFlags[Y];        // phoneme data for sampled consonants
-			pitches[X] = pitch + phase1;      // pitch
+			pitches[X] = d.pitch + phase1;      // d.pitch
 			X++;
+			X = X % 256;
 			phase2--;
+			if (phase2 < 0) {
+				phase2 += 256;
+			}
 		} while(phase2 != 0);
-		mem44++;
-	} while (mem44 != 0);
+		d.mem44++;
+		d.mem44 = d.mem44 % 256;
+	} while (d.mem44 != 0);
 	
 	// -------------------
 	//pos47694:
@@ -446,7 +485,7 @@ class SamRender
 	// outBlendFrames-1 and the first inBlendFrames.
 	//
 	// The exception to this is the Pitch[] parameter, which is interpolates the
-	// pitch from the CENTER of the current phoneme to the CENTER of the next
+	// d.pitch from the CENTER of the current phoneme to the CENTER of the next
 	// phoneme.
 	//
 	// Here are two examples. First, For example, consider the word "SUN" (S AH N)
@@ -458,7 +497,7 @@ class SamRender
 	//
 	// The formant transitions for the output frames are calculated as follows:
 	//
-	//     flags ampl1 freq1 ampl2 freq2 ampl3 freq3 pitch
+	//     flags ampl1 freq1 ampl2 freq2 ampl3 freq3 d.pitch
 	//    ------------------------------------------------
 	// S
 	//    241     0     6     0    73     0    99    61   Use S (weight 18) for transition instead of AH (weight 2)
@@ -483,7 +522,7 @@ class SamRender
 	//
 	// Now, consider the reverse "NUS" (N AH S):
 	//
-	//     flags ampl1 freq1 ampl2 freq2 ampl3 freq3 pitch
+	//     flags ampl1 freq1 ampl2 freq2 ampl3 freq3 d.pitch
 	//    ------------------------------------------------
 	// N
 	//     0     5     6     5    54     0   121    61
@@ -505,16 +544,17 @@ class SamRender
 	//   241     0     6     0    73     0    99    61
 
 		A = 0;
-		mem44 = 0;
-		mem49 = 0; // mem49 starts at as 0
+		d.mem44 = 0;
+		d.mem49 = 0; // d.mem49 starts at as 0
 		X = 0;
 		while(true) //while No. 1
 		{
 	 
 			// get the current and following phoneme
-			Y = phonemeIndexOutput[X];
-			A = phonemeIndexOutput[X+1];
+			Y = d.phonemeIndexOutput[X];
+			A = d.phonemeIndexOutput[X+1];
 			X++;
+			X = X % 256;
 
 			// exit loop at end token
 			if (A == 255) {
@@ -524,15 +564,15 @@ class SamRender
 
 			// get the ranking of each phoneme
 			X = A;
-			mem56 = RenderTabs.blendRank[A];
+			d.mem56 = RenderTabs.blendRank[A];
 			A = RenderTabs.blendRank[Y];
 			
 			// compare the rank - lower rank value is stronger
-			if (A == mem56) {
+			if (A == d.mem56) {
 				// same rank, so use out blend lengths from each phoneme
 				phase1 = RenderTabs.outBlendLength[Y];
 				phase2 = RenderTabs.outBlendLength[X];
-			} else if (A < mem56) {
+			} else if (A < d.mem56) {
 				// first phoneme is stronger, so us it's blend lengths
 				phase1 = RenderTabs.inBlendLength[X];
 				phase2 = RenderTabs.outBlendLength[X];
@@ -543,26 +583,30 @@ class SamRender
 				phase2 = RenderTabs.inBlendLength[Y];
 			}
 
-			Y = mem44;
-			A = mem49 + phonemeLengthOutput[mem44]; // A is mem49 + length
-			mem49 = A; // mem49 now holds length + position
+			Y = d.mem44;
+			A = d.mem49 + d.phonemeLengthOutput[d.mem44]; // A is d.mem49 + length
+			d.mem49 = A; // d.mem49 now holds length + position
 			A = A + phase2; //Maybe Problem because of carry flag
+			A = A % 256;
 
 			//47776: ADC 42
 			speedcounter = A;
-			mem47 = 168;
-			phase3 = mem49 - phase1; // what is mem49
+			d.mem47 = 168;
+			phase3 = d.mem49 - phase1; // what is d.mem49
 			A = phase1 + phase2; // total transition?
 			mem38 = A;
 			
 			X = A;
 			X -= 2;
+			if (X < 0) {
+				X += 256;
+			}
 			if ((X & 128) == 0) {
 				do   //while No. 2
 				{
 					//pos47810:
 
-				  // mem47 is used to index the tables:
+				  // d.mem47 is used to index the tables:
 				  // 168  pitches[]
 				  // 169  frequency1
 				  // 170  frequency2
@@ -573,7 +617,7 @@ class SamRender
 
 					mem40 = mem38;
 
-					if (mem47 == 168)     // pitch
+					if (d.mem47 == 168)     // d.pitch
 					{
 							  
 					   // unlike the other values, the pitches[] interpolates from 
@@ -583,34 +627,40 @@ class SamRender
 						var mem36:Int;
 						var mem37:Int;
 						// half the width of the current phoneme
-						mem36 = phonemeLengthOutput[mem44] >> 1;
+						mem36 = d.phonemeLengthOutput[d.mem44] >> 1;
 						// half the width of the next phoneme
-						mem37 = phonemeLengthOutput[mem44+1] >> 1;
+						mem37 = d.phonemeLengthOutput[d.mem44+1] >> 1;
 						// sum the values
 						mem40 = mem36 + mem37; // length of both halves
-						mem37 += mem49; // center of next phoneme
-						mem36 = mem49 - mem36; // center index of current phoneme
-						A = read(mem47, mem37); // value at center of next phoneme - end interpolation value
+						mem37 += d.mem49; // center of next phoneme
+						mem36 = d.mem49 - mem36; // center index of current phoneme
+						A = read(d.mem47, mem37); // value at center of next phoneme - end interpolation value
 						//A = mem[address];
 						
 						Y = mem36; // start index of interpolation
-						mem53 = A - read(mem47, mem36); // value to center of current phoneme
+						d.mem53 = A - read(d.mem47, mem36); // value to center of current phoneme
+						if (d.mem53 < 0) {
+							d.mem53 += 256;
+						}
 					} else {
 						// value to interpolate to
-						A = read(mem47, speedcounter);
+						A = read(d.mem47, speedcounter);
 						// position to start interpolation from
 						Y = phase3;
 						// value to interpolate from
-						mem53 = A - read(mem47, phase3);
+						d.mem53 = A - read(d.mem47, phase3);
+						if (d.mem53 < 0) {
+							d.mem53 += 256;
+						}
 					}
 					
 					//Code47503(mem40);
-					// ML : Code47503 is division with remainder, and mem50 gets the sign
+					// ML : Code47503 is division with remainder, and d.mem50 gets the sign
 					
 					// calculate change per frame
-					mem50 = (((mem53) < 0) ? 128 : 0);
-					mem51 = Std.int(Math.abs(mem53)) % mem40;
-					mem53 = Std.int(mem53 / mem40);
+					d.mem50 = (((d.mem53) < 0) ? 128 : 0);
+					d.mem51 = Std.int(Math.abs(d.mem53)) % mem40;
+					d.mem53 = Std.int(d.mem53 / mem40);
 
 					// interpolation range
 					X = mem40; // number of frames to interpolate over
@@ -619,76 +669,99 @@ class SamRender
 
 					// linearly interpolate values
 
-					mem56 = 0;
+					d.mem56 = 0;
 					//47907: CLC
 					//pos47908:
 					while(true)     //while No. 3
 					{
-						A = read(mem47, Y) + mem53; //carry alway cleared
+						A = read(d.mem47, Y) + d.mem53; //carry alway cleared
 
 						mem48 = A;
 						Y++;
+						Y = Y % 256;
 						X--;
+						if ( X < 0) {
+							X += 256;
+						}
 						if (X == 0) {
 							break;
 						}
 
-						mem56 += mem51;
-						if (mem56 >= mem40)  //???
+						d.mem56 += d.mem51;
+						d.mem56 = d.mem56 % 256;
+						
+						if (d.mem56 >= mem40)  //???
 						{
-							mem56 -= mem40; //carry? is set
-							//if ((mem56 & 128)==0)
-							if ((mem50 & 128)==0)
+							d.mem56 -= mem40; //carry? is set
+							if (d.mem56 < 0) {
+								d.mem56 += 256;
+							}
+							//if ((d.mem56 & 128)==0)
+							if ((d.mem50 & 128)==0)
 							{
 								//47935: BIT 50
 								//47937: BMI 47943
-								if(mem48 != 0) mem48++;
-							} else mem48--;
+								if (mem48 != 0) {
+									mem48++;
+									mem48 = mem48 % 256;
+								}
+							} else {
+								mem48--;
+								if (mem48 < 0) {
+									mem48 += 256;
+								}
+							}
 						}
 						//pos47945:
-						write(mem47, Y, mem48);
+						write(d.mem47, Y, mem48);
 					} //while No. 3
 
 					//pos47952:
-					mem47++;
-					//if (mem47 != 175) goto pos47810;
-				} while (mem47 != 175);     //while No. 2
+					d.mem47++;
+					d.mem47 = d.mem47 % 256;
+					//if (d.mem47 != 175) goto pos47810;
+				} while (d.mem47 != 175);     //while No. 2
 			}
 			//pos47963:
-			mem44++;
-			X = mem44;
+			d.mem44++;
+			d.mem44 = d.mem44 % 256;
+			X = d.mem44;
 		}  //while No. 1
 
 		//goto pos47701;
 		//pos47970:
 
 		// add the length of this phoneme
-		mem48 = mem49 + phonemeLengthOutput[mem44];
+		mem48 = d.mem49 + d.phonemeLengthOutput[d.mem44];
+		mem48 = mem48 % 256;
 		
 
 	// ASSIGN PITCH CONTOUR
 	//
-	// This subtracts the F1 frequency from the pitch to create a
-	// pitch contour. Without this, the output would be at a single
-	// pitch level (monotone).
+	// This subtracts the F1 frequency from the d.pitch to create a
+	// d.pitch contour. Without this, the output would be at a single
+	// d.pitch level (monotone).
 
 		
-		// don't adjust pitch if in sing mode
-		if (!singMode) {
+		// don't adjust d.pitch if in sing mode
+		if (!d.singMode) {
 			// iterate through the buffer
 
 			for(i in 0...256) {
 				// subtract half the frequency of the formant 1.
 				// this adds variety to the voice
 				pitches[i] -= (frequency1[i] >> 1);
+				if (pitches[i] < 0) {
+					pitches[i] = pitches[i] + 256;
+				}
 			}
 		}
 
 		phase1 = 0;
 		phase2 = 0;
 		phase3 = 0;
-		mem49 = 0;
-		speedcounter = 72; //sam standard speed
+		d.mem49 = 0;
+		speedcounter = 72; //sam standard d.speed
 
 	// RESCALE AMPLITUDE
 	//
@@ -705,9 +778,12 @@ class SamRender
 
 		Y = 0;
 		A = pitches[0];
-		mem44 = A;
+		d.mem44 = A;
 		X = A;
-		mem38 = A - (A>>2);     // 3/4*A ???
+		mem38 = A - (A >> 2);     // 3/4*A ???
+		if (mem38 < 0) {
+			mem38 += 256;
+		}
 
 		/*
 	if (debug)
@@ -732,7 +808,7 @@ class SamRender
 			if (!skipOtherPart) {
 				// get the sampled information on the phoneme
 				A = sampledConsonantFlag[Y];
-				mem39 = A;
+				d.mem39 = A;
 				
 				// unvoiced sampled phoneme?
 				A = A & 248;
@@ -743,25 +819,35 @@ class SamRender
 					
 					// skip ahead two in the phoneme buffer
 					Y += 2;
+					Y = Y % 256;
 					mem48 -= 2;
+					if (mem48 < 0) {
+						mem48 += 256;
+					}
 				} else {
 					// simulate the glottal pulse and formants
-					mem56 = RenderTabs.multtable[RenderTabs.sinus[phase1] | amplitude1[Y]];
+					d.mem56 = RenderTabs.multtable[RenderTabs.sinus[phase1] | amplitude1[Y]];
 
 					carry = false;
-					if ((mem56 + RenderTabs.multtable[RenderTabs.sinus[phase2] | amplitude2[Y]] ) > 255) {
+					if ((d.mem56 + RenderTabs.multtable[RenderTabs.sinus[phase2] | amplitude2[Y]] ) > 255) {
 						carry = true;
 					}
 					
-					mem56 += RenderTabs.multtable[RenderTabs.sinus[phase2] | amplitude2[Y]];
+					d.mem56 += RenderTabs.multtable[RenderTabs.sinus[phase2] | amplitude2[Y]];
+					d.mem56 = d.mem56 % 256;
 					
-					A = mem56 + RenderTabs.multtable[RenderTabs.rectangle[phase3] | amplitude3[Y]] + (carry?1:0);
+					A = d.mem56 + RenderTabs.multtable[RenderTabs.rectangle[phase3] | amplitude3[Y]] + (carry?1:0);
+					A = A % 256;
 					A = ((A + 136) & 255) >> 4; //there must be also a carry
+					A = A % 256;
 					//mem[54296] = A;
 					
 					// output the accumulated value
 					output(0, A);
 					speedcounter--;
+					if (speedcounter < 0) {
+						speedcounter += 256;	
+					}
 					
 					if (speedcounter != 0) {
 						//goto pos48155;
@@ -769,9 +855,13 @@ class SamRender
 					}else {
 						skipFirstPart = false;
 						Y++; //go to next amplitude
+						Y = Y % 256;
 						
 						// decrement the frame count
 						mem48--;
+						if (mem48 < 0) {
+							mem48 += 256;	
+						}
 					}
 				}
 				
@@ -781,21 +871,24 @@ class SamRender
 					if (mem48 == 0) {
 						return;
 					}
-					speedcounter = speed;
+					speedcounter = d.speed;
 				}
 		//pos48155:
 				 
 				// decrement the remaining length of the glottal pulse
-				mem44--;
+				d.mem44--;
+				if (d.mem44 < 0) {
+					d.mem44 += 256;	
+				}
 			}
 			// finished with a glottal pulse?
-			if (mem44 == 0 || skipOtherPart) {
+			if (d.mem44 == 0 || skipOtherPart) {
 				skipOtherPart = false;
 	//pos48159:
 				// fetch the next glottal pulse length
 				A = pitches[Y];
-				mem44 = A;
-				A = A - (A>>2);
+				d.mem44 = A;
+				A = A - (A >> 2);
 				mem38 = A;
 				
 				// reset the formant wave generators to keep them in 
@@ -808,14 +901,21 @@ class SamRender
 			
 			// decrement the count
 			mem38--;
+			if (mem38 < 0) {
+				mem38 += 256;	
+			}
 			
 			// is the count non-zero and the sampled flag is zero?
-			if((mem38 != 0) || (mem39 == 0))
-			{
+			if((mem38 != 0) || (d.mem39 == 0)) {
 				// reset the phase of the formants to match the pulse
 				phase1 += frequency1[Y];
+				phase1 = phase1 % 256;
+				
 				phase2 += frequency2[Y];
+				phase2 = phase1 % 256;
+				
 				phase3 += frequency3[Y];
+				phase3 = phase1 % 256;
 				continue;
 			}
 			
@@ -839,8 +939,8 @@ class SamRender
 		do {
 			//pos48321:
 
-			mem56 = 8;
-			A = Read(mem47, Y);
+			d.mem56 = 8;
+			A = Read(d.mem47, Y);
 
 			//pos48327:
 			do
@@ -864,19 +964,19 @@ class SamRender
 				}
 
 				for(X = wait2; X>0; X--); //wait
-				mem56--;
-			} while(mem56 != 0);
+				d.mem56--;
+			} while(d.mem56 != 0);
 
 			Y++;
 			phase1++;
 
 		} while (phase1 != 0);
-		//	if (phase1 != 0) goto pos48321;
+		//	if (phase1 != 0) goto pos48321;	
+		*/
 		A = 1;
-		mem44 = 1;
+		d.mem44 = 1;
 		mem66 = Y;
-		Y = mem49;
-	*/
+		Y = d.mem49;
 		return;
 	}
 
@@ -891,7 +991,7 @@ class SamRender
 		//pos48376:
 			   
 		// store the location of the punctuation
-		mem49 = X;
+		d.mem49 = X;
 		A = X;
 		var Atemp = A;
 		
@@ -904,7 +1004,7 @@ class SamRender
 		X = A;
 
 		// FIXME: Explain this fix better, it's not obvious
-		// ML : A =, fixes a problem with invalid pitch with '.'
+		// ML : A =, fixes a problem with invalid d.pitch with '.'
 		while ( (A = pitches[X]) == 127) {
 			X++;
 		}
@@ -929,7 +1029,7 @@ class SamRender
 			X++;
 			
 			// exit if the punctuation has been reached
-			if (X == mem49) {
+			if (X == d.mem49) {
 				return; //goto pos47615;
 			}
 			
