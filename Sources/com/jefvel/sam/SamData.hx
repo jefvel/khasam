@@ -22,9 +22,9 @@ class SamData
 	public var Y:Int;
 	public var A:Int;
 	
-	public var speed:Int;
-	public var pitch:Int;
-	public var singMode:Bool;
+	public var speed:Int = 122;
+	public var pitch:Int = 84;
+	public var singMode:Bool = true;
 	
 	public var phonemeIndexOutput:Vector<Int>;
 	public var stressOutput:Vector<Int>;

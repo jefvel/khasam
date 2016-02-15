@@ -17,7 +17,7 @@ class Sam {
 	var pitch:Int = 64;
 	var mouth:Int = 128;
 	var throat:Int = 128;
-	var singMode:Bool = false;
+	var singMode:Bool = true;
 	
 	var mem39:Int;
 	var mem44:Int;
@@ -28,8 +28,6 @@ class Sam {
 	var mem56:Int;
 	
 	var mem59:Int = 0;
-
-
 	
 	var o:SamTabs;
 	var p:ReciterTabs;
@@ -41,12 +39,11 @@ class Sam {
 	var d:SamData;
 	
 	public static var bufferPos = 0;
-	public static var buffer:Vector<Int> = new Vector<Int>(44100 * 10);
+	public static var buffer:Vector<Int> = new Vector<Int>(22050 * 10);
 	
-	public function new() {
+	public function new(samInput:String = "lol") {
 		d = new SamData();
-		
-		var samInput = "hello ";
+
 		trace("Sam input: " + samInput);
 		
 		render = new SamRender();
@@ -118,6 +115,7 @@ class Sam {
 	
 		//trace(d);
 		render.PrepareOutput(d);
+		trace("Buf len:" + Sam.bufferPos);
 	}
 	
 	
@@ -192,7 +190,7 @@ class Sam {
 			
 			var megaBreak = false;
 			while (true) { 
-				trace("pos41095");
+				//trace("pos41095");
 				// GET FIRST CHARACTER AT POSITION Y IN signInputTable
 				// --> should change name to PhonemeNameTable1
 				d.A = SamTabs.signInputTable1[d.Y].charCodeAt(0);
@@ -245,7 +243,7 @@ class Sam {
 			//pos41134:
 			megaBreak = false;
 			while (true) {
-				trace("pos41134");
+				//trace("pos41134");
 				// DOES THE PHONEME IN THE TABLE END WITH '*'?
 				if (SamTabs.signInputTable2[d.Y] == '*') {
 				// DOES THE FIRST CHARACTER MATCH THE FIRST LETTER OF THE PHONEME
@@ -1414,11 +1412,25 @@ class Sam {
 	}
 	
 	public function getBuffer():SamSound {
-		var length = 44100*10;
-		var data:Vector<Float> = new Vector<Float>(length);
+		var length = Sam.buffer.length;//44100*10;
+		var data:Vector<Float> = new Vector<Float>(length << 2);
+		var i2 = 0;
 		for (i in 0...length) {
+			var f:Float = Sam.buffer[i];
+			f /= 256.0;
+			f -= 0.5;
+			data[i * 4] = f;
+			data[i * 4 + 1] = f;
+			data[i * 4 + 2] = f;
+			data[i * 4 + 3] = f;
 			//data[i] =  (Math.sin((i / (300.0 + Math.sin(i * 0.001) * 99))) * 0.5 + 0.5) / Math.pow(i * 0.0001, 3) ;
+		
 		}
+		
+		var d = data.toArray();
+		d.splice(i2, d.length - i2);
+		
+		//trace(d);
 		
 		return new SamSound(data);
 	}

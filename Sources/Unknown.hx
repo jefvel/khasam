@@ -12,9 +12,9 @@ class Unknown {
 	public function new() {
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
-		sam = new Sam();
+		sam = new Sam("hejhej");
 		var b = sam.getBuffer();
-		//b.play();
+		b.play();
 	}
 
 	function update(): Void {
