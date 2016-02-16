@@ -53,9 +53,7 @@ class SamRender {
 	public function new() {
 		//trace("L:" + RenderTabs.sampleTable.length);
 		pitches = new Vector<Int>(256);
-		for (i in 0...256) {
-			pitches[i] = 0;
-		}
+	
 		
 		frequency1 = new Vector<Int>(256);
 		frequency2 = new Vector<Int>(256);
@@ -66,6 +64,21 @@ class SamRender {
 		amplitude3 = new Vector<Int>(256);
 		
 		sampledConsonantFlag = new Vector<Int>(256);
+		reset();
+	}
+	
+	public function reset() {
+		for (i in 0...256) {
+			pitches[i] = 0;
+		}
+		timetable = [
+			[162, 167, 167, 127, 128],
+			[226, 60, 60, 0, 0],
+			[225, 60, 59, 0, 0],
+			[200, 0, 0, 54, 55],
+			[199, 0, 0, 54, 54]
+		];
+		oldtimetableindex = 0;
 	}
 	
 	static var oldtimetableindex = 0;
@@ -107,17 +120,17 @@ class SamRender {
 		
 	public function PrepareOutput(d:SamData):Void {
 		this.d = d;
+		RenderTabs.reset();
+		setMouthThroat(d.mouth, d.throat);
 		
 		A = 0;
 		X = 0;
 		Y = 0;
 		
-		//trace(d);
-		
 		var runs = 0;
 		
 		//pos48551:
-		while (runs < 10000) {
+		while (true) {
 			runs++;
 			A = d.phonemeIndex[X];
 			if (A == 255) {
@@ -133,7 +146,7 @@ class SamRender {
 				var temp = X;
 				//mem[48546] = X;
 				d.phonemeIndexOutput[Y] = 255;
-				//Render();
+				Render();
 				//X = mem[48546];
 				X = temp;
 				Y = 0;
@@ -154,8 +167,6 @@ class SamRender {
 			Y++;
 			Y = Y % 256;
 		}
-		//trace(runs + ", " + A);
-		//trace("X:" + X);
 	}
 	
 	function RenderSample(mem66:Int):Int //unsigned char *
@@ -186,8 +197,10 @@ class SamRender {
 		d.mem53 = RenderTabs.tab48426[X];
 		d.mem47 = X;      //46016+mem[56]*256
 		
+		var skipFlag:Int = 0;
 		// voiced sample?
 		A = d.mem39 & 248;
+		A = A % 256;
 		if(A == 0) {
 			// voiced phoneme: Z*, ZH, V*, DH
 			Y = d.mem49;
@@ -195,10 +208,11 @@ class SamRender {
 			
 			// jump to voiced portion
 			//goto pos48315;
+			skipFlag = 3;
+		}else{
+			Y = A ^ 255;
 		}
 		
-		Y = A ^ 255;
-		var skipFlag:Int = 0;
 		while(true){
 		//pos48274:
 			if (skipFlag < 1) {
@@ -432,6 +446,7 @@ class SamRender {
 		d.mem44++;
 		d.mem44 = d.mem44 % 256;
 	} while (d.mem44 != 0);
+	//trace("sampledConsonantFlag: " + sampledConsonantFlag);
 	
 	// -------------------
 	//pos47694:
@@ -569,12 +584,14 @@ class SamRender {
 		d.mem44 = 0;
 		d.mem49 = 0; // d.mem49 starts at as 0
 		X = 0;
+		var runs = 0;
 		while(true) //while No. 1
 		{
-	 
+			runs ++;
 			// get the current and following phoneme
 			Y = d.phonemeIndexOutput[X];
-			A = d.phonemeIndexOutput[X+1];
+			A = d.phonemeIndexOutput[X + 1];
+			//trace("A: " + A);
 			X++;
 			X = X % 256;
 
@@ -607,6 +624,7 @@ class SamRender {
 
 			Y = d.mem44;
 			A = d.mem49 + d.phonemeLengthOutput[d.mem44]; // A is d.mem49 + length
+			A = A % 256;
 			d.mem49 = A; // d.mem49 now holds length + position
 			A = A + phase2; //Maybe Problem because of carry flag
 			A = A % 256;
@@ -760,8 +778,10 @@ class SamRender {
 
 		//goto pos47701;
 		//pos47970:
-
+		
+		//trace("mem38: " + mem38 + ", mem39: " + d.mem39 + " runs: "+ runs);
 		// add the length of this phoneme
+
 		mem48 = d.mem49 + d.phonemeLengthOutput[d.mem44];
 		mem48 = mem48 % 256;
 		
@@ -837,10 +857,12 @@ class SamRender {
 		while(true) {
 			// get the sampled information on the phoneme
 			A = sampledConsonantFlag[Y];
+			//trace("Y: " + Y);
 			d.mem39 = A;
 			
 			// unvoiced sampled phoneme?
 			A = A & 248;
+			A = A % 256;
 			if(A != 0) {
 				// render the sample for the phoneme
 				RenderSample(mem66);
@@ -878,6 +900,7 @@ class SamRender {
 					speedcounter += 256;
 				}
 				
+				//if(speedcounter != 0) goto pos48155
 				if (speedcounter == 0) {
 					Y++; //go to next amplitude
 					Y = Y % 256;
@@ -942,7 +965,8 @@ class SamRender {
 				}
 				
 				// is the count non-zero and the sampled flag is zero?
-				if((mem38 != 0) || (d.mem39 == 0)) {
+				if ((mem38 != 0) || (d.mem39 == 0)) {
+					//trace("mem38: " + mem38 + ", mem39: " + d.mem39);
 					// reset the phase of the formants to match the pulse
 					phase1 += frequency1[Y];
 					phase1 = phase1 % 256;
@@ -968,16 +992,17 @@ class SamRender {
 		// The following code is never reached. It's left over from when
 		// the voiced sample code was part of this loop, instead of part
 		// of RenderSample();
-/*
+
 		//pos48315:
-		int tempA;
+		/*log("pos48315");
+		var tempA:Int = 0;
 		phase1 = A ^ 255;
 		Y = mem66;
 		do {
 			//pos48321:
 
 			d.mem56 = 8;
-			A = Read(d.mem47, Y);
+			A = read(d.mem47, Y);
 
 			//pos48327:
 			do
@@ -986,26 +1011,36 @@ class SamRender {
 				//48328: BCC 48337
 				tempA = A;
 				A = A << 1;
+				A = A % 256;
 				if ((tempA & 128) != 0)
 				{
 					X = 26;
 					// mem[54296] = X;
-					bufferpos += 150;
-					buffer[bufferpos/50] = (X & 15)*16;
+					Sam.bufferPos += 150;
+					var oj = (X & 15) * 16;
+					oj = oj % 256;
+					Sam.buffer[Std.int(Sam.bufferPos/50)] = oj;
 				} else
 				{
 					//mem[54296] = 6;
 					X=6; 
-					bufferpos += 150;
-					buffer[bufferpos/50] = (X & 15)*16;
+					Sam.bufferPos += 150;
+					var oj = (X & 15) * 16;
+					oj = oj % 256;
+					Sam.buffer[Std.int(Sam.bufferPos/50)] = oj;
 				}
-
-				for(X = wait2; X>0; X--); //wait
+					
+				//X = wait2;
+				//for(X = wait2; X>0; X--); //wait
+				X = 0;
 				d.mem56--;
+				
 			} while(d.mem56 != 0);
 
 			Y++;
+			Y = Y % 256;
 			phase1++;
+			phase1 = phase1 % 256;
 
 		} while (phase1 != 0);
 		//	if (phase1 != 0) goto pos48321;	

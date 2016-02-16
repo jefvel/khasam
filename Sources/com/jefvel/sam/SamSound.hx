@@ -22,6 +22,6 @@ class SamSound
 	}
 	
 	public function play() {
-		return Audio1.play(sound, false);
+		return Audio1.play(sound);
 	}
 }

@@ -13,11 +13,6 @@ import kha.audio1.Audio;
 class Sam {
 
 	var input:Vector<Int>;
-	var speed:Int = 72;
-	var pitch:Int = 64;
-	var mouth:Int = 128;
-	var throat:Int = 128;
-	var singMode:Bool = true;
 	
 	var mem39:Int;
 	var mem44:Int;
@@ -29,71 +24,51 @@ class Sam {
 	
 	var mem59:Int = 0;
 	
-	var o:SamTabs;
-	var p:ReciterTabs;
-	var i:RenderTabs;
-	
 	var render:SamRender;
-	var reciter:SamReciter;
-	
 	var d:SamData;
 	
 	public static var bufferPos = 0;
-	public static var buffer:Vector<Int> = new Vector<Int>(22050 * 10);
+	public static var buffer:Vector<Int> = new Vector<Int>(22050 * 20);
 	
-	public function new(samInput:String = "lol") {
+	public function new(samInput:String = "lol", phonetic:Bool = false ) {
 		d = new SamData();
-
-		trace("Sam input: " + samInput);
-		
 		render = new SamRender();
-		var s1 = Timer.stamp();
-		var o = SamReciter.textToPhonemes(samInput);
-		input = SamReciter.result;
-		
-		var s2 = Timer.stamp() - s1;
-		trace("Reciter took " + s2 + " seconds." );
-		
-		var res = "";
-		for (i in input) {
-			res += String.fromCharCode(i);
-		}
-		
-		trace("Reciter result: " + res);
-		
-		SamInit();
+		setInput(samInput, phonetic);
 	}
 	
 	function init() {
-		render.setMouthThroat(mouth, throat);
-		bufferPos = 0;
+		Sam.bufferPos = 0;
+		
+		for (i in 0...Sam.buffer.length) {
+			Sam.buffer[i] = 0;
+		}
 		
 		for (i in 0...256) {
 			d.stress[i] = 0;
 			d.phonemeLength[i] = 0;
-			
+			d.phonemeIndex[i] = 0;
 		}
+		
 		for (i in 0...60) {
 			d.phonemeIndexOutput[i] = 0;
 			d.stressOutput[i] = 0;
 			d.phonemeLengthOutput[i] = 0;
 		}
 		
-		d.phonemeIndex[255] = 255;
+		d.phonemeIndex[255] = 32;
 	}
 	
 	public function SamInit() {
 		init();
-		d.phonemeIndex[255] = 32;
-		
+	
 		if (parser1() == 0) {
 			trace("parser 1 error. aborting Sam. He died, you monster.");
 			return;
 		}
 		
 		Parser2();
-		PrintPhonemes(d.phonemeIndex, d.phonemeLength, d.stress);
 		
+		//PrintPhonemes(d.phonemeIndex, d.phonemeLength, d.stress);
 		CopyStress();
 		SetPhonemeLength();
 		AdjustLengths();
@@ -111,28 +86,84 @@ class Sam {
 		
 		InsertBreath();
 		
-		PrintPhonemes(d.phonemeIndex, d.phonemeLength, d.stress);
-	
-		//trace(d);
+		//PrintPhonemes(d.phonemeIndex, d.phonemeLength, d.stress);
 		render.PrepareOutput(d);
-		trace("Buf len:" + Sam.bufferPos);
 	}
 	
+	public function setInput(input:String, phonetic:Bool = false):Void {
+		if(!phonetic){
+			var o = SamReciter.textToPhonemes(input);
+			this.input = SamReciter.result;
+		} else {
+			var r = new Vector<Int>(256);
+			for (i in 0...256) {
+				r[i] = 0;
+			}
+			
+			r[255] = 255;
+			
+			var c = 0;
+			for (i in 0...input.length) {
+				r[i] = input.charAt(i).toUpperCase().charCodeAt(0);
+				c = i;
+			}
+			
+			r[c] = 32;
+			r[c + 1] = 155;
+			
+			this.input = r;
+		}
+	}
 	
+	public function say(sentence:String, pitch:Int = 64, speed:Int = 72, phonetic:Bool = false) {
+		d.reset();
+		render.reset();
+		setPitch(pitch);
+		setSpeed(speed);
+		setInput(sentence, phonetic);
+		getBuffer().play();
+	}
+	
+	public function setSpeed(speed:Int):Void {
+		d.speed = speed;
+	}
+	
+	public function setPitch(pitch:Int):Void {
+		d.pitch = pitch;
+	}
+	
+	public function enableSingMode(enabled:Bool):Void {
+		d.singMode = enabled;
+	}
+	
+	public function getBuffer():SamSound {
+		SamInit();
+		var bufEnd = Std.int(Sam.bufferPos / 10);
+		var l = bufEnd;
+		var data:Vector<Float> = new Vector<Float>(l * 4);
+		for (i in 0...l) {
+			var f:Float = Sam.buffer[i];
+			f /= 0xff;		
+			data[i * 4] = f;
+			data[i * 4 + 1] = f;
+			data[i * 4 + 2] = f;
+			data[i * 4 + 3] = f;
+		}
+		
+		return new SamSound(data);
+	}
 	
 	function PrintPhonemes(phonemeindex:Vector<Int>, phonemeLength:Vector<Int>, stress:Vector<Int>) {
 		var i = 0;
-		trace("===========================================\n");
-
+		trace("===========================================");
 		trace("Internal Phoneme presentation:\n\n");
 		trace(" idx    phoneme  length  stress\n");
 		trace("------------------------------\n");
-		while((phonemeindex[i] != 255) && (i < 255))
-		{
+		while((phonemeindex[i] != 255) && (i < 255)) {
 			if (phonemeindex[i] < 81) {
 				trace(" "+ 
 				phonemeindex[i] + ", "+ 
-				SamTabs.signInputTable1[phonemeindex[i]]+ ", "+ 
+				SamTabs.signInputTable1[phonemeindex[i]]+ ""+ 
 				SamTabs.signInputTable2[phonemeindex[i]]+ ", "+
 				phonemeLength[i]+ ", "+
 				stress[i]
@@ -142,8 +173,7 @@ class Sam {
 			}
 			i++;
 		}
-		trace("===========================================\n");
-		//trace("\n");
+		trace("===========================================");
 	}
 	
 	
@@ -1384,54 +1414,5 @@ class Sam {
 			d.X = d.X % 256;
 			mem66 = d.X;
 		}
-
-	}
-	
-	public function setInput(input:String):Void {
-		
-	}
-	
-	public function setSpeed(speed:Int):Void {
-		
-	}
-	
-	public function setPitch(pitch:Int):Void {
-		
-	}
-	
-	public function setMouth(mouth:Int):Void {
-		
-	}
-	
-	public function setThroat(mouth:Int):Void {
-		
-	}
-	
-	public function enableSingMode():Void {
-		
-	}
-	
-	public function getBuffer():SamSound {
-		var length = Sam.buffer.length;//44100*10;
-		var data:Vector<Float> = new Vector<Float>(length << 2);
-		var i2 = 0;
-		for (i in 0...length) {
-			var f:Float = Sam.buffer[i];
-			f /= 256.0;
-			f -= 0.5;
-			data[i * 4] = f;
-			data[i * 4 + 1] = f;
-			data[i * 4 + 2] = f;
-			data[i * 4 + 3] = f;
-			//data[i] =  (Math.sin((i / (300.0 + Math.sin(i * 0.001) * 99))) * 0.5 + 0.5) / Math.pow(i * 0.0001, 3) ;
-		
-		}
-		
-		var d = data.toArray();
-		d.splice(i2, d.length - i2);
-		
-		//trace(d);
-		
-		return new SamSound(data);
 	}
 }
